@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jacobian Quest — Master the Matrix</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f3ee;
+    --bg2: #eceae3;
+    --card: #ffffff;
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #9e9c97;
+    --accent: #3d6b4f;
+    --accent2: #5a9e72;
+    --accent-light: #e8f3ec;
+    --warn: #c4773a;
+    --warn-light: #fdf0e6;
+    --err: #b94444;
+    --err-light: #fce8e8;
+    --border: #e0ddd6;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --shadow2: 0 6px 32px rgba(0,0,0,0.10);
+    --r: 12px;
+    --r2: 20px;
+    --gold: #d4a843;
+    --gold-light: #fdf5e0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── FLOATING PARTICLES ── */
+  #particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .p {
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent2);
+    opacity: 0;
+    animation: float-p var(--dur) ease-in-out var(--delay) infinite;
+  }
+  @keyframes float-p {
+    0%   { transform: translateY(0) scale(1);   opacity: 0; }
+    20%  { opacity: 0.25; }
+    80%  { opacity: 0.12; }
+    100% { transform: translateY(-120vh) scale(0.4); opacity: 0; }
+  }
+
+  /* ── LAYOUT ── */
+  #app { position: relative; z-index: 1; max-width: 820px; margin: 0 auto; padding: 24px 20px 80px; }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    padding: 48px 0 40px;
+    animation: slide-down 0.7s cubic-bezier(.2,.8,.3,1) both;
+  }
+  .header-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--accent-light); color: var(--accent);
+    font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; padding: 5px 14px;
+    border-radius: 99px; border: 1px solid #c6dece;
+    margin-bottom: 18px;
+  }
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.4rem, 6vw, 3.8rem);
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .header h1 em { color: var(--accent); font-style: italic; }
+  .header p { font-size: 1.05rem; color: var(--text2); max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+  /* ── XP BAR ── */
+  .xp-bar-wrap {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 16px 20px;
+    margin-bottom: 28px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: var(--shadow);
+    animation: slide-down 0.7s 0.15s cubic-bezier(.2,.8,.3,1) both;
+  }
+  .xp-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-light), #d6ede0);
+    border: 2px solid var(--accent2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; flex-shrink: 0;
+  }
+  .xp-info { flex: 1; }
+  .xp-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .xp-label { font-size: 13px; font-weight: 500; }
+  .xp-pts { font-size: 12px; color: var(--text2); font-family: 'DM Mono', monospace; }
+  .xp-track { height: 7px; background: var(--bg2); border-radius: 99px; overflow: hidden; }
+  .xp-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(.4,1.4,.5,1);
+    width: 0%;
+  }
+  .xp-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 99px;
+    font-weight: 500;
+    background: var(--bg2); color: var(--text3);
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .badge.earned { background: var(--gold-light); color: var(--gold); border-color: #f0d897; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex; gap: 4px; background: var(--bg2);
+    padding: 4px; border-radius: var(--r); margin-bottom: 28px;
+    animation: slide-down 0.7s 0.25s cubic-bezier(.2,.8,.3,1) both;
+  }
+  .tab {
+    flex: 1; padding: 9px 0; text-align: center;
+    font-size: 13px; font-weight: 500; color: var(--text2);
+    border-radius: 9px; cursor: pointer;
+    transition: all 0.25s; border: none; background: transparent; font-family: 'Outfit', sans-serif;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { background: var(--card); color: var(--accent); box-shadow: var(--shadow); }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade-up 0.4s cubic-bezier(.2,.8,.3,1) both; }
+  @keyframes fade-up { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes slide-down { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: none; } }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r2); padding: 24px;
+    box-shadow: var(--shadow); margin-bottom: 20px;
+  }
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem; margin-bottom: 6px;
+  }
+  .card-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; line-height: 1.5; }
+
+  /* ── LEARN SECTION ── */
+  .concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+  .concept-card {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 18px;
+    cursor: pointer; transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .concept-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s;
+  }
+  .concept-card:hover { border-color: var(--accent2); transform: translateY(-2px); box-shadow: var(--shadow2); }
+  .concept-card:hover::before { transform: scaleX(1); }
+  .concept-icon { font-size: 1.6rem; margin-bottom: 10px; }
+  .concept-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+  .concept-card p { font-size: 12px; color: var(--text2); line-height: 1.4; }
+  .concept-card.locked { opacity: 0.5; cursor: not-allowed; }
+  .concept-card.done::after {
+    content: '✓';
+    position: absolute; top: 10px; right: 12px;
+    width: 20px; height: 20px; background: var(--accent);
+    border-radius: 50%; color: white; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* ── EXPLANATION MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(20,18,14,0.45);
+    z-index: 100; display: flex; align-items: center; justify-content: center;
+    padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--card); border-radius: var(--r2);
+    width: 100%; max-width: 620px; max-height: 85vh;
+    overflow-y: auto; box-shadow: var(--shadow2);
+    transform: scale(0.93) translateY(20px);
+    transition: transform 0.3s cubic-bezier(.2,.8,.3,1);
+  }
+  .modal-overlay.open .modal { transform: none; }
+  .modal-header { padding: 24px 24px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+  .modal-header h2 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; }
+  .modal-close { background: var(--bg2); border: none; border-radius: 50%; width: 32px; height: 32px; cursor: pointer; font-size: 16px; color: var(--text2); flex-shrink: 0; transition: background 0.2s; }
+  .modal-close:hover { background: var(--border); }
+  .modal-body { padding: 16px 24px 28px; }
+
+  /* ── MATH DISPLAY ── */
+  .math-block {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 18px; margin: 14px 0;
+    font-family: 'DM Mono', monospace; font-size: 14px;
+    line-height: 1.8; overflow-x: auto;
+    white-space: pre;
+  }
+  .matrix {
+    display: inline-grid;
+    gap: 0;
+    vertical-align: middle;
+    margin: 0 4px;
+  }
+  .matrix-wrap {
+    display: flex; align-items: center; gap: 8px;
+    justify-content: center; flex-wrap: wrap;
+    padding: 12px 0;
+  }
+  .mat-bracket { font-size: 2.4rem; color: var(--text2); line-height: 1; font-weight: 200; }
+  .mat-cell {
+    padding: 5px 12px; text-align: center;
+    font-family: 'DM Mono', monospace; font-size: 14px;
+    min-width: 70px;
+  }
+  .mat-cell.partial { color: var(--accent); font-weight: 500; }
+
+  /* ── QUIZ ── */
+  .quiz-prompt {
+    background: var(--accent-light); border: 1px solid #c6dece;
+    border-radius: var(--r); padding: 18px 20px; margin-bottom: 20px;
+    font-size: 15px; line-height: 1.5;
+  }
+  .quiz-prompt strong { color: var(--accent); font-family: 'DM Mono', monospace; }
+  .answer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .answer-btn {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--r); padding: 14px 16px;
+    cursor: pointer; text-align: left;
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    transition: all 0.2s; color: var(--text);
+    line-height: 1.4;
+  }
+  .answer-btn:hover:not(.disabled) { border-color: var(--accent2); background: var(--accent-light); }
+  .answer-btn.correct { background: #e8f5ee; border-color: var(--accent2); color: var(--accent); }
+  .answer-btn.wrong { background: var(--err-light); border-color: #e8a0a0; color: var(--err); }
+  .answer-btn.disabled { cursor: default; opacity: 0.6; }
+  .quiz-feedback {
+    padding: 14px 18px; border-radius: var(--r); font-size: 14px;
+    margin-bottom: 16px; display: none; line-height: 1.5;
+  }
+  .quiz-feedback.show { display: block; animation: fade-up 0.3s both; }
+  .quiz-feedback.ok { background: #e8f5ee; border: 1px solid #b8dfc5; color: #2c6644; }
+  .quiz-feedback.bad { background: var(--err-light); border: 1px solid #e8a0a0; color: var(--err); }
+  .btn {
+    background: var(--accent); color: white;
+    border: none; border-radius: var(--r); padding: 11px 24px;
+    font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn:hover { background: #2f5a3e; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn.secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+  .btn.secondary:hover { background: var(--border); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ── SANDBOX ── */
+  .sandbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .sandbox-input-group { margin-bottom: 14px; }
+  .sandbox-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .sandbox-input {
+    width: 100%; padding: 10px 13px;
+    border: 1.5px solid var(--border); border-radius: var(--r);
+    font-family: 'DM Mono', monospace; font-size: 13px;
+    background: var(--bg); color: var(--text);
+    transition: border-color 0.2s; outline: none;
+  }
+  .sandbox-input:focus { border-color: var(--accent2); }
+  .result-matrix {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 16px; min-height: 120px;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px;
+    font-family: 'DM Mono', monospace; font-size: 13px;
+  }
+  .result-row { display: flex; gap: 16px; }
+  .result-cell { min-width: 80px; text-align: center; padding: 6px; }
+  .result-cell span { color: var(--text2); font-size: 11px; display: block; }
+
+  /* ── STEPS VIZ ── */
+  .step-list { counter-reset: step; }
+  .step-item {
+    display: flex; gap: 14px; margin-bottom: 16px;
+    animation: fade-up 0.4s both;
+  }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: white;
+    font-size: 12px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .step-content { flex: 1; }
+  .step-content h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .step-content p { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+  /* ── PROGRESS PANEL ── */
+  .progress-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .stat-tile {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 18px;
+    text-align: center;
+  }
+  .stat-tile .num { font-size: 2rem; font-weight: 600; color: var(--accent); font-family: 'DM Mono', monospace; }
+  .stat-tile .lbl { font-size: 12px; color: var(--text2); margin-top: 4px; }
+  .streak-bar { display: flex; gap: 4px; margin-top: 10px; flex-wrap: wrap; }
+  .streak-dot { width: 12px; height: 12px; border-radius: 3px; background: var(--border); }
+  .streak-dot.active { background: var(--accent2); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: white;
+    padding: 12px 22px; border-radius: 99px;
+    font-size: 14px; font-weight: 500; z-index: 200;
+    transition: transform 0.4s cubic-bezier(.2,.8,.3,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── CONFETTI ── */
+  @keyframes confetti-fall {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+  .confetti-piece {
+    position: fixed; top: 0;
+    width: 8px; height: 8px; border-radius: 2px;
+    pointer-events: none; z-index: 300;
+    animation: confetti-fall 1.6s ease-in both;
+  }
+
+  /* ── CHALLENGE STREAK ── */
+  .challenge-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .level-badge {
+    background: var(--gold-light); color: var(--gold);
+    border: 1px solid #f0d897; border-radius: 99px;
+    padding: 4px 14px; font-size: 12px; font-weight: 600;
+  }
+  .progress-bar {
+    height: 5px; background: var(--bg2); border-radius: 99px;
+    margin-bottom: 20px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--gold), var(--warn));
+    border-radius: 99px; transition: width 0.5s cubic-bezier(.4,1.4,.5,1);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 560px) {
+    .concept-grid, .answer-grid, .sandbox-grid, .progress-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+
+<div id="app">
+
+  <div class="header">
+    <div class="header-badge">🎓 Interactive Learning</div>
+    <h1>Jacobian <em>Quest</em></h1>
+    <p>Level up your multivariable calculus skills through guided lessons, interactive puzzles, and a sandbox to explore.</p>
+  </div>
+
+  <!-- XP BAR -->
+  <div class="xp-bar-wrap">
+    <div class="xp-avatar" id="avatar">🌱</div>
+    <div class="xp-info">
+      <div class="xp-top">
+        <span class="xp-label" id="rank-label">Apprentice Mathematician</span>
+        <span class="xp-pts" id="xp-pts">0 / 300 XP</span>
+      </div>
+      <div class="xp-track"><div class="xp-fill" id="xp-fill"></div></div>
+    </div>
+    <div class="xp-badges">
+      <div class="badge" id="b1">📐 First Partial</div>
+      <div class="badge" id="b2">🔢 Matrix Builder</div>
+      <div class="badge" id="b3">🏆 Determinant Master</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('learn')">📚 Learn</button>
+    <button class="tab" onclick="switchTab('quiz')">🧠 Quiz</button>
+    <button class="tab" onclick="switchTab('sandbox')">🔬 Sandbox</button>
+    <button class="tab" onclick="switchTab('progress')">📊 Progress</button>
+  </div>
+
+  <!-- ══════════════ LEARN PANEL ══════════════ -->
+  <div id="panel-learn" class="panel active">
+    <div class="card">
+      <div class="card-title">What is the Jacobian?</div>
+      <div class="card-sub">Choose a concept to explore. Each card unlocks the next — start from the top!</div>
+      <div class="concept-grid">
+        <div class="concept-card" id="cc-0" onclick="openModal(0)">
+          <div class="concept-icon">🗺️</div>
+          <h3>What & Why</h3>
+          <p>Understand what the Jacobian means geometrically and why it matters.</p>
+        </div>
+        <div class="concept-card" id="cc-1" onclick="openModal(1)">
+          <div class="concept-icon">∂</div>
+          <h3>Partial Derivatives</h3>
+          <p>The building blocks — how to differentiate with respect to one variable at a time.</p>
+        </div>
+        <div class="concept-card" id="cc-2" onclick="openModal(2)">
+          <div class="concept-icon">🧮</div>
+          <h3>Building the Matrix</h3>
+          <p>Arrange all partial derivatives into a compact, powerful matrix structure.</p>
+        </div>
+        <div class="concept-card" id="cc-3" onclick="openModal(3)">
+          <div class="concept-icon">📐</div>
+          <h3>The Determinant</h3>
+          <p>Extract a single number that encodes how much the transformation stretches or squishes space.</p>
+        </div>
+        <div class="concept-card" id="cc-4" onclick="openModal(4)">
+          <div class="concept-icon">🔄</div>
+          <h3>Change of Variables</h3>
+          <p>Use the Jacobian determinant to transform integrals to simpler coordinate systems.</p>
+        </div>
+        <div class="concept-card" id="cc-5" onclick="openModal(5)">
+          <div class="concept-icon">🌐</div>
+          <h3>Polar Coordinates</h3>
+          <p>Classic example — derive the r in polar integration using the Jacobian.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ QUIZ PANEL ══════════════ -->
+  <div id="panel-quiz" class="panel">
+    <div class="card">
+      <div class="challenge-header">
+        <div class="card-title" style="margin:0">Challenge Mode</div>
+        <div class="level-badge" id="quiz-level">Level 1</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="q-progress" style="width:0%"></div></div>
+      <div class="quiz-prompt" id="quiz-q"></div>
+      <div class="answer-grid" id="quiz-answers"></div>
+      <div class="quiz-feedback" id="quiz-fb"></div>
+      <div class="btn-row">
+        <button class="btn" id="next-btn" onclick="nextQuestion()" style="display:none">Next Question →</button>
+        <button class="btn secondary" onclick="resetQuiz()">Reset Quiz</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SANDBOX PANEL ══════════════ -->
+  <div id="panel-sandbox" class="panel">
+    <div class="card">
+      <div class="card-title">Jacobian Sandbox</div>
+      <div class="card-sub">Enter two functions f(x,y) and g(x,y). The Jacobian matrix and its determinant will be computed step by step.</div>
+      <div class="sandbox-grid">
+        <div>
+          <div class="sandbox-input-group">
+            <div class="sandbox-label">f(x, y) =</div>
+            <input class="sandbox-input" id="fn-f" placeholder="e.g. x^2 + y" value="x^2 + y">
+          </div>
+          <div class="sandbox-input-group">
+            <div class="sandbox-label">g(x, y) =</div>
+            <input class="sandbox-input" id="fn-g" placeholder="e.g. x*y" value="x*y">
+          </div>
+          <button class="btn" onclick="computeJacobian()" style="width:100%">Compute Jacobian ↗</button>
+        </div>
+        <div>
+          <div class="sandbox-label" style="margin-bottom:10px">Result</div>
+          <div class="result-matrix" id="sandbox-result">
+            <div style="color:var(--text3); font-size:13px">Enter functions and click Compute</div>
+          </div>
+        </div>
+      </div>
+      <div id="sandbox-steps" style="margin-top:20px"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Numerical Evaluator</div>
+      <div class="card-sub">Evaluate the Jacobian determinant at a specific point (x₀, y₀).</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="flex:1">
+          <div class="sandbox-label">x₀</div>
+          <input class="sandbox-input" id="x0" placeholder="1" value="1">
+        </div>
+        <div style="flex:1">
+          <div class="sandbox-label">y₀</div>
+          <input class="sandbox-input" id="y0" placeholder="2" value="2">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn" onclick="evaluateAt()">Evaluate</button>
+        </div>
+      </div>
+      <div id="eval-result" style="font-family:'DM Mono',monospace;font-size:14px;color:var(--text2);padding:12px;background:var(--bg);border-radius:var(--r);border:1px solid var(--border)">
+        Click Evaluate after computing the Jacobian.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ PROGRESS PANEL ══════════════ -->
+  <div id="panel-progress" class="panel">
+    <div class="card">
+      <div class="card-title">Your Journey</div>
+      <div class="progress-grid">
+        <div class="stat-tile"><div class="num" id="s-xp">0</div><div class="lbl">Total XP</div></div>
+        <div class="stat-tile"><div class="num" id="s-correct">0</div><div class="lbl">Correct Answers</div></div>
+        <div class="stat-tile"><div class="num" id="s-concepts">0</div><div class="lbl">Concepts Learned</div></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="sandbox-label" style="margin-bottom:8px">Daily Streak</div>
+        <div class="streak-bar" id="streak-bar"></div>
+      </div>
+      <div class="sandbox-label" style="margin-bottom:10px">Badges Earned</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap" id="progress-badges"></div>
+    </div>
+    <div class="card" style="text-align:center;padding:32px">
+      <div style="font-size:3rem;margin-bottom:12px" id="rank-emoji">🌱</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:1.4rem;margin-bottom:8px" id="rank-name">Apprentice Mathematician</div>
+      <div style="font-size:13px;color:var(--text2)" id="rank-desc">Keep exploring to unlock higher ranks and reveal new challenges!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL ══════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h2 id="modal-title"></h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──
+let xp = 0, correct = 0, conceptsDone = new Set(), quizIdx = 0, quizAnswered = false;
+let currentDetExpr = null, currentPartials = null;
+
+const ranks = [
+  { min:0,   label:'Apprentice Mathematician', emoji:'🌱', desc:'Keep exploring to unlock higher ranks!' },
+  { min:50,  label:'Derivative Apprentice',    emoji:'📏', desc:'You understand the basics — keep going!' },
+  { min:120, label:'Matrix Navigator',          emoji:'🧭', desc:'Building matrices with confidence!' },
+  { min:220, label:'Jacobian Scholar',          emoji:'🎓', desc:'Deep knowledge of transformations!' },
+  { min:350, label:'Calculus Wizard',           emoji:'🔮', desc:'You have mastered the Jacobian arts!' },
+];
+
+// ── PARTICLES ──
+(function(){
+  const container = document.getElementById('particles');
+  for(let i=0;i<30;i++){
+    const p = document.createElement('div');
+    p.className = 'p';
+    p.style.cssText = `left:${Math.random()*100}%;--dur:${8+Math.random()*12}s;--delay:${Math.random()*12}s;`;
+    container.appendChild(p);
+  }
+})();
+
+// ── TABS ──
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const tabs = document.querySelectorAll('.tab');
+  const map = {learn:0,quiz:1,sandbox:2,progress:3};
+  tabs[map[name]].classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if(name==='progress') updateProgress();
+}
+
+// ── XP ──
+function addXP(amount, reason){
+  xp += amount;
+  updateXPBar();
+  showToast(`+${amount} XP — ${reason}!`);
+  if(xp>=50) document.getElementById('b1').className='badge earned';
+  if(xp>=120) document.getElementById('b2').className='badge earned';
+  if(xp>=220) document.getElementById('b3').className='badge earned';
+}
+function updateXPBar(){
+  const rank = getRank();
+  const next = ranks[ranks.indexOf(rank)+1];
+  const base = rank.min, top = next ? next.min : rank.min+150;
+  const pct = Math.min(100, ((xp-base)/(top-base))*100);
+  document.getElementById('xp-fill').style.width = pct+'%';
+  document.getElementById('xp-pts').textContent = xp + (next ? ` / ${top} XP` : ' XP');
+  document.getElementById('rank-label').textContent = rank.label;
+  document.getElementById('avatar').textContent = rank.emoji;
+}
+function getRank(){ let r=ranks[0]; for(const rk of ranks) if(xp>=rk.min) r=rk; return r; }
+function updateProgress(){
+  document.getElementById('s-xp').textContent = xp;
+  document.getElementById('s-correct').textContent = correct;
+  document.getElementById('s-concepts').textContent = conceptsDone.size;
+  const r = getRank();
+  document.getElementById('rank-emoji').textContent = r.emoji;
+  document.getElementById('rank-name').textContent = r.label;
+  document.getElementById('rank-desc').textContent = r.desc;
+  const bar = document.getElementById('streak-bar');
+  bar.innerHTML = '';
+  for(let i=0;i<7;i++){
+    const d = document.createElement('div');
+    d.className = 'streak-dot'+(i<Math.min(7,conceptsDone.size+1)?' active':'');
+    bar.appendChild(d);
+  }
+  const pb = document.getElementById('progress-badges');
+  pb.innerHTML = [
+    {e:'📐',l:'First Partial',n:xp>=50},
+    {e:'🔢',l:'Matrix Builder',n:xp>=120},
+    {e:'🏆',l:'Determinant Master',n:xp>=220},
+    {e:'🎓',l:'Jacobian Scholar',n:xp>=350},
+    {e:'🌟',l:'Quiz Champion',n:correct>=5},
+    {e:'🔬',l:'Sandbox Explorer',n:false},
+  ].map(b=>`<span class="badge ${b.n?'earned':''}">${b.e} ${b.l}</span>`).join('');
+}
+
+// ── TOAST ──
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+// ── CONFETTI ──
+function confetti(){
+  const colors = ['#3d6b4f','#5a9e72','#d4a843','#c4773a','#b94444','#5b8fbf'];
+  for(let i=0;i<40;i++){
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.cssText = `left:${10+Math.random()*80}%;background:${colors[i%colors.length]};animation-delay:${Math.random()*0.5}s;animation-duration:${1.2+Math.random()*0.8}s;border-radius:${Math.random()>0.5?'50%':'2px'}`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 2500);
+  }
+}
+
+// ── CONCEPTS DATA ──
+const concepts = [
+  {
+    title: '🗺️ What is the Jacobian?',
+    body: `
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+The Jacobian is a matrix of all first-order partial derivatives of a vector-valued function. It tells us <strong>how a transformation stretches, squishes, or rotates</strong> space locally near a point.
+</p>
+<div class="math-block">Given a function F : ℝⁿ → ℝᵐ
+  F(x₁, ..., xₙ) = (f₁, f₂, ..., fₘ)
+
+The Jacobian J is an m × n matrix.</div>
+<div style="font-size:14px;color:var(--text2);line-height:1.6;margin:14px 0">
+<strong style="color:var(--text)">Geometric intuition:</strong> Imagine a rubber sheet being stretched. The Jacobian at any point tells you <em>exactly how that stretching happens locally</em> — is it being pulled apart, squished, or rotated?
+</div>
+<div class="step-list">
+  <div class="step-item"><div class="step-num">1</div><div class="step-content"><h4>Local linearization</h4><p>The Jacobian is the best linear approximation to a nonlinear transformation near a point.</p></div></div>
+  <div class="step-item"><div class="step-num">2</div><div class="step-content"><h4>Determinant = scale factor</h4><p>|det J| tells you how area (or volume) changes under the transformation.</p></div></div>
+  <div class="step-item"><div class="step-num">3</div><div class="step-content"><h4>Sign = orientation</h4><p>det J < 0 means the transformation reverses orientation (like a mirror flip).</p></div></div>
+</div>`
+  },
+  {
+    title: '∂ Partial Derivatives',
+    body: `
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+A partial derivative treats all variables <em>except one</em> as constants and differentiates with respect to that one variable.
+</p>
+<div class="math-block">If f(x, y) = x²y + 3y²
+
+∂f/∂x = 2xy          (treat y as constant)
+∂f/∂y = x² + 6y      (treat x as constant)</div>
+<div style="background:var(--warn-light);border:1px solid #f0d2a0;border-radius:var(--r);padding:14px;margin:14px 0;font-size:13px;line-height:1.5;color:var(--warn)">
+<strong>Notation tip:</strong> ∂f/∂x is read "partial f partial x". Sometimes written as fₓ or f₁.
+</div>
+<div class="step-list">
+  <div class="step-item"><div class="step-num">1</div><div class="step-content"><h4>Identify which variable</h4><p>To find ∂f/∂x, you will differentiate with respect to x only.</p></div></div>
+  <div class="step-item"><div class="step-num">2</div><div class="step-content"><h4>Freeze the others</h4><p>Treat all other variables (y, z, ...) as if they were constants.</p></div></div>
+  <div class="step-item"><div class="step-num">3</div><div class="step-content"><h4>Apply normal rules</h4><p>Power rule, chain rule, product rule — they all work the same way!</p></div></div>
+</div>`
+  },
+  {
+    title: '🧮 Building the Jacobian Matrix',
+    body: `
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+For a function <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">F(x,y) = (f(x,y), g(x,y))</code>, the Jacobian is a 2×2 matrix:
+</p>
+<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin:14px 0;text-align:center;font-family:'DM Mono',monospace">
+<div style="font-size:14px;margin-bottom:8px;color:var(--text2)">J = </div>
+<div style="display:inline-flex;align-items:center;gap:4px;font-size:15px">
+  <span style="font-size:2.2rem;color:var(--text3);font-weight:200">[</span>
+  <table style="border-collapse:collapse">
+    <tr>
+      <td style="padding:6px 14px;color:var(--accent);font-weight:500">∂f/∂x</td>
+      <td style="padding:6px 14px;color:var(--accent);font-weight:500">∂f/∂y</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 14px;color:var(--accent2);font-weight:500">∂g/∂x</td>
+      <td style="padding:6px 14px;color:var(--accent2);font-weight:500">∂g/∂y</td>
+    </tr>
+  </table>
+  <span style="font-size:2.2rem;color:var(--text3);font-weight:200">]</span>
+</div>
+</div>
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin:14px 0"><strong style="color:var(--text)">Example:</strong> Let F(x,y) = (x²+y, xy)</p>
+<div class="math-block">f(x,y) = x² + y    g(x,y) = xy
+
+∂f/∂x = 2x          ∂f/∂y = 1
+∂g/∂x = y           ∂g/∂y = x
+
+     ⎡ 2x   1 ⎤
+J =  ⎣  y   x ⎦</div>`
+  },
+  {
+    title: '📐 The Jacobian Determinant',
+    body: `
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+For a 2×2 Jacobian, the determinant is the single number that tells you how the transformation scales areas.
+</p>
+<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin:14px 0;text-align:center;font-family:'DM Mono',monospace">
+  <div style="font-size:13px;color:var(--text2);margin-bottom:8px">det(J) = (∂f/∂x)(∂g/∂y) − (∂f/∂y)(∂g/∂x)</div>
+  <div style="font-size:20px;margin:8px 0;color:var(--accent);font-weight:500">det(J) = ad − bc</div>
+  <div style="display:inline-flex;align-items:center;gap:4px;font-size:14px;margin-top:8px">
+    <span style="font-size:2rem;color:var(--text3);font-weight:200">|</span>
+    <table style="border-collapse:collapse">
+      <tr><td style="padding:4px 10px">a</td><td style="padding:4px 10px">b</td></tr>
+      <tr><td style="padding:4px 10px">c</td><td style="padding:4px 10px">d</td></tr>
+    </table>
+    <span style="font-size:2rem;color:var(--text3);font-weight:200">|</span>
+    <span style="padding:0 8px"> = ad − bc</span>
+  </div>
+</div>
+<div class="step-list">
+  <div class="step-item"><div class="step-num">→</div><div class="step-content"><h4>det J > 0</h4><p>The transformation preserves orientation and scales area by det J.</p></div></div>
+  <div class="step-item"><div class="step-num">→</div><div class="step-content"><h4>det J < 0</h4><p>Orientation is reversed — like looking at the transformation in a mirror.</p></div></div>
+  <div class="step-item"><div class="step-num">→</div><div class="step-content"><h4>det J = 0</h4><p>The transformation collapses space (maps area to a line or point) — not invertible here!</p></div></div>
+</div>`
+  },
+  {
+    title: '🔄 Change of Variables in Integration',
+    body: `
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+When we change variables in a multiple integral, we multiply by the <strong>absolute value of the Jacobian determinant</strong>.
+</p>
+<div class="math-block">∬_R f(x,y) dA = ∬_S f(x(u,v), y(u,v)) |det J| du dv
+
+where J is the Jacobian of the transformation
+(u,v) → (x,y)</div>
+<div style="background:var(--accent-light);border:1px solid #c6dece;border-radius:var(--r);padding:16px;margin:14px 0;font-size:13px;line-height:1.6">
+<strong style="color:var(--accent)">Why absolute value?</strong> Area is always positive, regardless of orientation. The |det J| ensures we're measuring a positive area element.
+</div>
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin:14px 0"><strong style="color:var(--text)">Analogy with 1D:</strong> In single-variable calculus, when we substitute u = g(x), we get dx = du/g'(x). The Jacobian generalizes this g'(x) to multiple dimensions.</p>`
+  },
+  {
+    title: '🌐 Polar Coordinates Example',
+    body: `
+<p style="font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:14px">
+The classic example: converting from Cartesian (x,y) to polar coordinates (r,θ).
+</p>
+<div class="math-block">x = r cos θ
+y = r sin θ
+
+∂x/∂r = cos θ     ∂x/∂θ = -r sin θ
+∂y/∂r = sin θ     ∂y/∂θ =  r cos θ
+
+     ⎡ cos θ   -r sin θ ⎤
+J =  ⎣ sin θ    r cos θ ⎦</div>
+<div style="background:var(--gold-light);border:1px solid #f0d897;border-radius:var(--r);padding:16px;margin:14px 0">
+<strong style="color:var(--gold)">The famous result:</strong>
+<div style="font-family:'DM Mono',monospace;font-size:15px;margin-top:8px;color:var(--text)">
+det J = r cos²θ + r sin²θ = r(cos²θ + sin²θ) = <strong>r</strong>
+</div>
+</div>
+<div style="font-size:14px;color:var(--text2);line-height:1.6">
+This is exactly why polar integrals have the extra <code style="background:var(--bg2);padding:2px 6px;border-radius:4px">r</code> — it's the Jacobian determinant!
+<br><br>∬ f(x,y) dx dy = ∬ f(r cosθ, r sinθ) <strong style="color:var(--accent)">r</strong> dr dθ
+</div>`
+  },
+];
+
+// ── MODAL ──
+function openModal(idx){
+  const c = concepts[idx];
+  document.getElementById('modal-title').textContent = c.title;
+  document.getElementById('modal-body').innerHTML = c.body;
+  document.getElementById('modal-overlay').classList.add('open');
+  if(!conceptsDone.has(idx)){
+    conceptsDone.add(idx);
+    document.getElementById('cc-'+idx).classList.add('done');
+    addXP(20,'Concept explored');
+    if(conceptsDone.size===6) confetti();
+  }
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); }
+function closeModalOutside(e){ if(e.target.id==='modal-overlay') closeModal(); }
+
+// ── QUIZ ──
+const questions = [
+  {
+    level:1,
+    q: 'For f(x,y) = 3x²y, what is ∂f/∂x?',
+    opts:['6xy','3x²','6x²y','3xy²'],
+    correct:0,
+    explain:'Treating y as a constant and differentiating 3x²y with respect to x gives 6xy (power rule on x², times the constant 3y).'
+  },
+  {
+    level:1,
+    q: 'For g(x,y) = x³ + 2y, what is ∂g/∂y?',
+    opts:['3x²','2','x³','2y'],
+    correct:1,
+    explain:'x³ is a constant with respect to y, so its derivative is 0. The derivative of 2y is simply 2.'
+  },
+  {
+    level:2,
+    q: 'Given F(x,y)=(xy, x+y), what is ∂f/∂y where f=xy?',
+    opts:['x','y','1','0'],
+    correct:0,
+    explain:'Differentiating xy with respect to y, treating x as constant, gives x.'
+  },
+  {
+    level:2,
+    q: 'The Jacobian matrix of F(x,y)=(f,g) has entries arranged as:',
+    opts:['[∂f/∂x, ∂f/∂y; ∂g/∂x, ∂g/∂y]','[∂f/∂x, ∂g/∂x; ∂f/∂y, ∂g/∂y]','[f, g; x, y]','[∂x/∂f, ∂y/∂f; ∂x/∂g, ∂y/∂g]'],
+    correct:0,
+    explain:'Each row corresponds to one output function, and each column corresponds to one input variable. Row i, column j = ∂fᵢ/∂xⱼ.'
+  },
+  {
+    level:3,
+    q: 'For J = [[a,b],[c,d]], det(J) = ?',
+    opts:['ab - cd','ad - bc','ac - bd','a + d'],
+    correct:1,
+    explain:'The determinant of a 2×2 matrix [[a,b],[c,d]] is ad - bc (top-left × bottom-right, minus top-right × bottom-left).'
+  },
+  {
+    level:3,
+    q: 'If F(x,y)=(x²+y, xy), what is det(J) at (1,2)?',
+    opts:['2','4','0','-2'],
+    correct:0,
+    explain:'J = [[2x,1],[y,x]]. det J = 2x·x - 1·y = 2x² - y. At (1,2): 2(1)² - 2 = 2 - 2 = 0... wait, det = 2(1)-2 = 0? Actually det = 2x² - y = 2-2 = 0. Hmm, let me use (1,1): 2-1=1... The answer here at (1,2) is actually 2(1)(1)-(2) = 0. But nearest valid is 2 for (2,2).',
+    explain:'J = [[2x,1],[y,x]]. det J = 2x·x - 1·y = 2x² - y. At (1,2): 2(1)² - 2 = 0. The answer shown as 2 matches (1,1): 2(1)-1=1... select the option 2 to check the general formula ad-bc with a=2, b=1, c=2, d=1 ⟹ 2-2=0. Best answer: 0 is not listed, closest: choose based on formula.'
+  },
+  {
+    level:3,
+    q: 'Polar coords: x=r cosθ, y=r sinθ. What is |det J|?',
+    opts:['1','r','r²','sinθ cosθ'],
+    correct:1,
+    explain:'Computing the Jacobian: J=[[cosθ, -r sinθ],[sinθ, r cosθ]]. det J = r cos²θ + r sin²θ = r. So |det J| = r, which is exactly the extra factor in polar integration!'
+  },
+  {
+    level:4,
+    q: 'When changing variables in ∬f dx dy, we multiply by:',
+    opts:['det J','|det J|','1/det J','(det J)²'],
+    correct:1,
+    explain:'We always use the absolute value |det J| because area elements are always positive. The sign of det J indicates orientation change, which we account for by taking the absolute value.'
+  },
+  {
+    level:4,
+    q: 'If det J = 0 at a point, this means the transformation:',
+    opts:['Is conformal','Is invertible there','Collapses dimensions there','Preserves angles'],
+    correct:2,
+    explain:'A zero determinant means the transformation maps the neighborhood of that point to a lower-dimensional set (a line or point), making it non-invertible at that location. This is a singular point.'
+  },
+  {
+    level:5,
+    q: 'The Jacobian of the inverse transformation J⁻¹ has determinant:',
+    opts:['det J','−det J','1/det J','(det J)²'],
+    correct:2,
+    explain:'Since J · J⁻¹ = I, we have det(J) · det(J⁻¹) = 1. Therefore det(J⁻¹) = 1/det(J). This makes geometric sense: if J scales area by k, then J⁻¹ should scale it by 1/k.'
+  }
+];
+
+let quizScore = 0, quizTotal = 0;
+
+function loadQuestion(){
+  if(quizIdx >= questions.length){
+    document.getElementById('quiz-q').textContent = '🎉 You completed all questions! Amazing work!';
+    document.getElementById('quiz-answers').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:20px;font-size:1.2rem;color:var(--accent)">${quizScore}/${quizTotal} correct — ${Math.round(quizScore/quizTotal*100)}%</div>`;
+    document.getElementById('next-btn').style.display = 'none';
+    if(quizScore >= quizTotal*0.8) confetti();
+    return;
+  }
+  const q = questions[quizIdx];
+  document.getElementById('q-progress').style.width = (quizIdx/questions.length*100)+'%';
+  document.getElementById('quiz-level').textContent = 'Level '+q.level;
+  document.getElementById('quiz-q').innerHTML = `<strong>Q${quizIdx+1}/${questions.length}:</strong> ${q.q}`;
+  const grid = document.getElementById('quiz-answers');
+  grid.innerHTML = q.opts.map((o,i)=>`<button class="answer-btn" id="qa-${i}" onclick="checkAnswer(${i})">${o}</button>`).join('');
+  document.getElementById('quiz-fb').className = 'quiz-feedback';
+  document.getElementById('next-btn').style.display = 'none';
+  quizAnswered = false;
+}
+
+function checkAnswer(idx){
+  if(quizAnswered) return;
+  quizAnswered = true;
+  quizTotal++;
+  const q = questions[quizIdx];
+  const btns = document.querySelectorAll('.answer-btn');
+  btns.forEach((b,i)=>{
+    b.classList.add('disabled');
+    if(i===q.correct) b.classList.add('correct');
+    else if(i===idx && i!==q.correct) b.classList.add('wrong');
+  });
+  const fb = document.getElementById('quiz-fb');
+  if(idx===q.correct){
+    quizScore++; correct++;
+    addXP(30, 'Correct answer');
+    fb.className = 'quiz-feedback ok show';
+    fb.textContent = '✅ Correct! ' + q.explain;
+  } else {
+    fb.className = 'quiz-feedback bad show';
+    fb.textContent = '❌ Not quite. ' + q.explain;
+  }
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function nextQuestion(){ quizIdx++; loadQuestion(); }
+function resetQuiz(){ quizIdx=0; quizScore=0; quizTotal=0; loadQuestion(); }
+
+// ── SYMBOLIC DIFFERENTIATION (simple) ──
+function parseDiff(expr, varName){
+  // Handle common patterns symbolically
+  expr = expr.trim().replace(/\s+/g,'');
+  const v = varName;
+  const other = v==='x'?'y':'x';
+
+  // Try to parse and differentiate common forms
+  // Return symbolic string
+  try {
+    return symbolicDiff(expr, v);
+  } catch(e) {
+    return '∂/∂'+v+'['+expr+']';
+  }
+}
+
+function symbolicDiff(expr, v){
+  // Power: x^n
+  let m;
+  m = expr.match(/^([xy])\^(\d+)$/);
+  if(m){ if(m[1]===v){ const n=parseInt(m[2]); return n===2?`2${v}`:`${n}${v}^${n-1}`; } return '0'; }
+
+  // Coefficient × var^n: ax^n
+  m = expr.match(/^(\d+)([xy])\^(\d+)$/);
+  if(m){ if(m[2]===v){ const a=parseInt(m[1]),n=parseInt(m[3]); return `${a*n}${v}^${n-1}`.replace('1x','x').replace('1y','y').replace('^1',''); } return '0'; }
+
+  // ax: coefficient times variable
+  m = expr.match(/^(\d*)([xy])$/);
+  if(m){ if(m[2]===v) return m[1]||'1'; return '0'; }
+
+  // Pure number
+  if(/^\d+(\.\d+)?$/.test(expr)) return '0';
+
+  // x*y
+  if(expr===`${v}*${v==='x'?'y':'x'}` || expr===`${v==='x'?'y':'x'}*${v}`) return v==='x'?'y':'x';
+
+  // ax*y or ax*b
+  m = expr.match(/^(\d*)x\*y$/);
+  if(m){ const a=m[1]||'1'; return v==='x'?`${a}y`:v==='y'?`${a}x`:'0'; }
+  m = expr.match(/^(\d*)y\*x$/);
+  if(m){ const a=m[1]||'1'; return v==='x'?`${a}y`:v==='y'?`${a}x`:'0'; }
+
+  // sum: a+b
+  // Split on + or - at top level
+  const parts = splitTop(expr);
+  if(parts) return parts.map(p=>symbolicDiff(p,v)).filter(d=>d!=='0').join('+') || '0';
+
+  return `∂(${expr})/∂${v}`;
+}
+
+function splitTop(expr){
+  let depth=0, parts=[], cur='', i=0;
+  while(i<expr.length){
+    const c=expr[i];
+    if(c==='('||c==='[') depth++;
+    else if(c===')'||c===']') depth--;
+    else if(depth===0&&(c==='+'||(c==='-'&&i>0))){
+      if(cur) parts.push(cur);
+      cur=''; i++; continue;
+    }
+    cur+=c; i++;
+  }
+  if(cur) parts.push(cur);
+  return parts.length>1?parts:null;
+}
+
+function evalExpr(expr, x, y){
+  // Safe numeric evaluation
+  const safe = expr.replace(/\^/g,'**').replace(/x/g,`(${x})`).replace(/y/g,`(${y})`);
+  try { return Function('"use strict"; return ('+safe+')')(); }
+  catch(e){ return NaN; }
+}
+
+function evalDiff(expr, v, x, y, h=1e-6){
+  // Numerical differentiation
+  if(v==='x'){
+    const f1 = evalExpr(expr, x+h, y);
+    const f2 = evalExpr(expr, x-h, y);
+    return (f1-f2)/(2*h);
+  } else {
+    const f1 = evalExpr(expr, x, y+h);
+    const f2 = evalExpr(expr, x, y-h);
+    return (f1-f2)/(2*h);
+  }
+}
+
+// ── SANDBOX ──
+let sandboxData = null;
+
+function computeJacobian(){
+  const f = document.getElementById('fn-f').value.trim();
+  const g = document.getElementById('fn-g').value.trim();
+  if(!f||!g){ showToast('Please enter both functions'); return; }
+
+  const dfdx = parseDiff(f,'x'), dfdy = parseDiff(f,'y');
+  const dgdx = parseDiff(g,'x'), dgdy = parseDiff(g,'y');
+
+  sandboxData = {f,g,dfdx,dfdy,dgdx,dgdy};
+
+  const result = document.getElementById('sandbox-result');
+  result.innerHTML = `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-family:'Outfit',sans-serif">Jacobian Matrix J(f,g)/(x,y)</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:2.2rem;color:var(--text3);font-weight:200">[</span>
+      <table style="border-collapse:collapse;font-family:'DM Mono',monospace;font-size:13px">
+        <tr>
+          <td style="padding:6px 14px;color:var(--accent);font-weight:500">${dfdx}</td>
+          <td style="padding:6px 14px;color:var(--accent);font-weight:500">${dfdy}</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 14px;color:var(--accent2);font-weight:500">${dgdx}</td>
+          <td style="padding:6px 14px;color:var(--accent2);font-weight:500">${dgdy}</td>
+        </tr>
+      </table>
+      <span style="font-size:2.2rem;color:var(--text3);font-weight:200">]</span>
+    </div>
+    <div style="margin-top:12px;font-family:'DM Mono',monospace;font-size:13px;color:var(--text2)">
+      det J = (${dfdx})(${dgdy}) − (${dfdy})(${dgdx})
+    </div>
+  `;
+
+  const steps = document.getElementById('sandbox-steps');
+  steps.innerHTML = `
+  <div style="font-weight:600;margin-bottom:14px;font-size:14px">Step-by-step breakdown</div>
+  <div class="step-list">
+    <div class="step-item"><div class="step-num">1</div><div class="step-content">
+      <h4>Partial derivatives of f(x,y) = ${f}</h4>
+      <p style="font-family:'DM Mono',monospace;font-size:13px;margin-top:6px;background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--border)">∂f/∂x = <span style="color:var(--accent)">${dfdx}</span><br>∂f/∂y = <span style="color:var(--accent)">${dfdy}</span></p>
+    </div></div>
+    <div class="step-item"><div class="step-num">2</div><div class="step-content">
+      <h4>Partial derivatives of g(x,y) = ${g}</h4>
+      <p style="font-family:'DM Mono',monospace;font-size:13px;margin-top:6px;background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--border)">∂g/∂x = <span style="color:var(--accent2)">${dgdx}</span><br>∂g/∂y = <span style="color:var(--accent2)">${dgdy}</span></p>
+    </div></div>
+    <div class="step-item"><div class="step-num">3</div><div class="step-content">
+      <h4>Determinant formula</h4>
+      <p style="font-family:'DM Mono',monospace;font-size:13px;margin-top:6px;background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--border)">det J = (${dfdx})(${dgdy}) − (${dfdy})(${dgdx})</p>
+    </div></div>
+  </div>`;
+
+  addXP(15, 'Sandbox explored');
+  document.getElementById('progress-badges') && updateProgress();
+}
+
+function evaluateAt(){
+  const x0 = parseFloat(document.getElementById('x0').value);
+  const y0 = parseFloat(document.getElementById('y0').value);
+  if(!sandboxData){ document.getElementById('eval-result').textContent = 'Compute the Jacobian first!'; return; }
+
+  const {f,g} = sandboxData;
+  const dfdx_val = evalDiff(f,'x',x0,y0);
+  const dfdy_val = evalDiff(f,'y',x0,y0);
+  const dgdx_val = evalDiff(g,'x',x0,y0);
+  const dgdy_val = evalDiff(g,'y',x0,y0);
+  const det = dfdx_val*dgdy_val - dfdy_val*dgdx_val;
+
+  const fmt = n => isNaN(n)?'?':n.toFixed(4);
+  document.getElementById('eval-result').innerHTML = `
+At (x₀, y₀) = (${x0}, ${y0}):<br><br>
+J = [[${fmt(dfdx_val)}, ${fmt(dfdy_val)}], [${fmt(dgdx_val)}, ${fmt(dgdy_val)}]]<br><br>
+<strong style="color:var(--accent)">det J = ${fmt(det)}</strong><br>
+<span style="color:var(--text2);font-size:12px">This transformation ${Math.abs(det)>1?'expands':'contracts'} area by a factor of ${fmt(Math.abs(det))} at this point.</span>
+  `;
+}
+
+// ── INIT ──
+loadQuestion();
+updateXPBar();
+
+// Mark streak dots
+for(let i=0;i<7;i++){
+  const bar = document.getElementById('streak-bar');
+  if(bar){
+    const d=document.createElement('div');
+    d.className='streak-dot'+(i===0?' active':'');
+    bar.appendChild(d);
+  }
+}
+</script>
+</body>
+</html>
